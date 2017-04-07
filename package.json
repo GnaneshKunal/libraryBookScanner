@@ -1,0 +1,14 @@
+{
+  "name": "librarybookscanner",
+  "version": "1.0.0",
+  "description": "IoT Project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "gnanesh",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.2"
+  }
+}
