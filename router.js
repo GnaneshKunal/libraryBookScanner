@@ -15,6 +15,9 @@ app.get('/', (req, res, next) => {
 
 app.get('/api/:id', (req, res, next) => {
     let id = req.params.id;
+    if (!id) {
+        return res.status(300).send("Id Needed");
+    }
     BookSchema.find({ tag: id }, (err, book) => {
         if (err)
             return next(err);
