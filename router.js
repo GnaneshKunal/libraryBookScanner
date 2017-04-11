@@ -18,7 +18,7 @@ app.get('/api/:id', (req, res, next) => {
     if (!id) {
         return res.status(300).send("Id Needed");
     }
-    BookSchema.find({ tag: id }, (err, book) => {
+    BookSchema.findOne({ tag: id }, (err, book) => {
         if (err)
             return next(err);
         if (!book)
