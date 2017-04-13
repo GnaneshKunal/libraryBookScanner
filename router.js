@@ -26,7 +26,7 @@ app.get('/api/id/:id', (req, res, next) => {
 app.get('/api/search/:book', (req, res, next) => {
     let book = req.params.book;
     if (!book) {
-        return res.send(300).send("Book Name Required"); 
+        return res.send(400).send("Book Name Required"); 
     }
     book = book.toLowerCase();
     BookSchema.find({ bookName: new RegExp(book, 'i') }, (err, books) => {
