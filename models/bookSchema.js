@@ -7,7 +7,10 @@ const BookSchema = new mongoose.Schema({
         type: String,
         unique: true
     },
-    bookName: String,
+    bookName: {
+        type: String,
+        lowercase: true
+    },
     row: {
         rowName: {
             type: String,
