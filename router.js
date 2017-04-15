@@ -28,6 +28,10 @@ function sendMail(book, misplacedColumn) {
 }
 
 app.get('/', (req, res, next) => {
+    return res.status(200).send("Library Book Scanner IoT Project");
+});
+
+app.get('/api/', (req, res, next) => {
     return res.status(200).send("You can get details of your book making a GET request to its id");
 });
 
@@ -75,8 +79,8 @@ app.get('/api/misplaced', (req, res, next) => {
     });
 });
 
-app.get('/api/search/:book', (req, res, next) => {
-    let book = req.params.book;
+app.get('/api/search', (req, res, next) => {
+    let book = req.query.book;
     if (!book) {
         return res.send(400).send("Book Name Required"); 
     }
@@ -90,7 +94,7 @@ app.get('/api/search/:book', (req, res, next) => {
     });
 });
 
-app.get('/books/:id', (req, res, next) => {
+app.get('/api/books/:id', (req, res, next) => {
     let tag = req.params.id;
     ColumnSchema.findOne({ tag }).populate('books', '-__v -_id -row')
         .exec((err, books) => {
