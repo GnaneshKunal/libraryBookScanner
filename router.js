@@ -111,7 +111,7 @@ app.get('/api/books/:id', (req, res, next) => {
         });
 });
 
-app.get('/api/column/:id', (req, res, mext) => {
+app.get('/api/row/:id', (req, res, mext) => {
     let tag = req.params.id;
     if (!tag || tag.length < 1)
         return res.status(500).send("Please enter a Valid Tag");
