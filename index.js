@@ -7,6 +7,8 @@ const http = require('http'),
     router = require('./router'),
     PORT = process.env.PORT || 8080;
 
+require('dotenv').config();
+
 mongoose.connect(process.env.DATABASE_URL, (err) => {
     if (err) throw err;
     else console.log('Connected');
