@@ -96,6 +96,8 @@ app.get('/api/search', (req, res, next) => {
 
 app.get('/api/books/:id', (req, res, next) => {
     let tag = req.params.id;
+    if (!tag || tag.length < 1)
+        return res.status(500).send("Please enter a Valid Tag");
     ColumnSchema.findOne({ tag }).populate('books', '-__v -_id -row')
         .exec((err, books) => {
             if (err)
@@ -107,6 +109,19 @@ app.get('/api/books/:id', (req, res, next) => {
                 });
             return res.status(200).send(arr);
         });
+});
+
+app.get('/api/column/:id', (req, res, mext) => {
+    let tag = req.params.id;
+    if (!tag || tag.length < 1)
+        return res.status(500).send("Please enter a Valid Tag");
+    ColumnSchema.findOne({ tag }, (err, column) => {
+        if (err)
+            return next(err);
+        if (!column)
+            return res.send(500).send("No column found");
+        return res.status(200).send(column.columnName);
+    });
 });
 
 app.post('/api/new', (req, res, next) => {
