@@ -4,9 +4,13 @@ const app = require('express').Router(),
     Mailjet = require('node-mailjet')
                             .connect(process.env.MAILJET_API, process.env.MAILJET_SECRET),
     BookSchema = require('./models/bookSchema'),
-    ColumnSchema = require('./models/columnSchema');
+      ColumnSchema = require('./models/columnSchema'),
+      UserSchema = require('./models/userSchema');
 
 module.exports = app;
+
+
+let users = {};
 
 function sendMail(book, misplacedColumn) {
     var options = {
@@ -26,6 +30,119 @@ function sendMail(book, misplacedColumn) {
         });
     return true;
 }
+
+app.get('/connect', (req, res, next) => {
+    let name = req.query.name;
+    let id = req.query.id;
+    if (!name || !id)
+        return res.status(400).send("Please send Name and Id");
+    users[id] = {
+        name,
+        searchBooks: [],
+        pendingBooks: []
+    };
+    UserSchema.findOne({ id }, (err, user) => {
+        if (err) {
+            delete users[id];
+            return next(err);
+        }
+        if (!user) {
+            delete users[id];
+            return res.status(404).send("No user found");
+        }
+        res.status(200).send({
+            user: user.name,
+            regno: user.regno,
+            pendingFine: user.pendingFine
+        });
+    });
+});
+
+app.get('/disconnect', (req, res, next) => {
+    let id = req.query.id;
+    if (!id)
+        return res.status(400).send("Please send ID");
+    if (!delete users[id]) {
+        return res.status(400).send("Something went wrong");
+    }
+    return res.status(200).send("Disconnected");
+});
+
+app.get('/getuser', (req, res, next) => {
+    let id = req.query.id;
+    if (!id) {
+        return res.status(400).send("Please enter ID");
+    }
+    UserSchema.findOne({ id }, (err, user) => {
+        if (err)
+            return next(err);
+        if (!user)
+            return res.status(404).send("No user found");
+        return res.status(200).send(user);
+    });
+});
+
+app.get('/v2/getsession', (req, res, next) => {
+    return res.status(200).send(users);
+});
+
+app.get('/api/putbooks', (req, res, next) => {
+    let bulkBooks = req.query.bulkbooks;
+    let id = req.query.id;
+    if (!bulkBooks || !id)
+        return res.status(400).send("Please send bulk books and user id");
+
+    let parsedBulkBooks;
+
+    try {
+        parsedBulkBooks = JSON.parse(bulkBooks);
+    } catch (err) {
+        return res.status(400).send("Send the correct format");
+    }
+    users[id].searchBooks = users[id].searchBooks.concat(bulkBooks);
+
+    return res.status(200).send("Updated Books");
+});
+
+app.get('/api/getbooks', (req, res, next) => {
+    let id = req.query.id;
+    if (!id)
+        return res.status(400).send("Please enter your ID");
+    return res.status(200).send(users[id].searchBooks);
+});
+
+app.get('/te', (req, res, next) => {
+    let id = req.query.id;
+    if (!id) {
+        return res.send(400).send("Please send your ID");
+    }
+    if (users[id] == undefined)
+        return res.send(404).send("ID not found");
+    let pendingBooks = users[id].pendingBooks;
+    if (pendingBooks.length > 0)
+        return res.status(200).send({ok: "ok"});
+    return res.send(200).send(users[id].pendingBooks);
+});
+
+app.get('/v2/search/book', (req, res, next) => {
+    let bid = req.query.bid;
+    let id = req.query.id;
+
+    if (!bid || !id) {
+        return res.send(400).send("Book ID and userID required");
+    }
+
+    BookSchema.findOne({ tag: id }, (err, book) => {
+        if (err)
+            return next(err);
+        if (!book) {
+            return res.send(404).send("No book found");
+        } else {
+            return "";
+        }
+    });
+});
+
 
 app.get('/', (req, res, next) => {
     return res.status(200).send("Library Book Scanner IoT Project");
@@ -119,7 +236,7 @@ app.get('/api/row/:id', (req, res, mext) => {
         if (err)
             return next(err);
         if (!column)
-            return res.send(500).send("No column found");
+            return res.status(500).send("No column found");
         return res.status(200).send(column.columnName);
     });
 });
