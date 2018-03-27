@@ -33,7 +33,6 @@ function sendMail(book, misplacedColumn) {
 }
 
 function checkID(arr, id) {
-    let found = false;
     let i = 0;
     _.forEach(arr, (u) => {
         if (_.indexOf(u.searchBooks, id) !== -1) {
@@ -182,8 +181,8 @@ app.get('/v2/search/book', (req, res, next) => {
                     //users[id].foundBooks.push({ uid: id, bid, rid}); something wron with this
                     users[found.user].foundBooks.push({ uid: id, bid, rid });
                     //users[found.user].foundBooks
-                    _.remove(users[found.user].foundBooks, (b) => {
-                        return b === bid; 
+                    _.remove(users[found.user].searchBooks, (b) => {
+                        return b === bid;
                     });
                     // return res.status(200).send("Book Found");
                     return res.status(200).send("helped him");
@@ -206,12 +205,16 @@ app.get('/v2/realtime', (req, res, next) => {
     } else {
         let foundBook = users[id].foundBook.pop();
         //return res.status(200).send(foundBook);
-        ColumnSchema.findOne({ tag: rid }, (err, row) => {
+        ColumnSchema.findOne({ tag: foundBook.rid }, (err, row) => {
             if (err)
                 return next(err);
             if (!row)
                 return res.status(404).send("Column Not found");
             else {
+                // check here as well.
+                _.remove(users[id].foundBooks, (b) => {
+                    return b.bid === foundBook.bid;
+                });
                 return res.status(200).send(_.merge(foundBook, {
                     columnName: row.columnName
                 }));
