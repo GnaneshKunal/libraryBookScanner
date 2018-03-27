@@ -13,6 +13,8 @@ const ColumnSchema = new mongoose.Schema({
         unique: true
     },
     books: [{ type: mongoose.Schema.ObjectId, ref: 'Book' }]
+}, {
+    usePushEach: true
 });
 
 module.exports = mongoose.model('Column', ColumnSchema);

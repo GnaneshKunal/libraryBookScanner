@@ -5,7 +5,8 @@ const app = require('express').Router(),
                             .connect(process.env.MAILJET_API, process.env.MAILJET_SECRET),
     BookSchema = require('./models/bookSchema'),
       ColumnSchema = require('./models/columnSchema'),
-      UserSchema = require('./models/userSchema');
+      UserSchema = require('./models/userSchema'),
+      _ = require('lodash');
 
 module.exports = app;
 
@@ -31,15 +32,30 @@ function sendMail(book, misplacedColumn) {
     return true;
 }
 
-app.get('/connect', (req, res, next) => {
+function checkID(arr, id) {
+    let found = false;
+    let i = 0;
+    _.forEach(arr, (u) => {
+        if (_.indexOf(u.searchBooks, id) !== -1) {
+            return { user: u.id, id: id };
+        }
+        if (i === _.size(users)) {
+            return false;
+        }
+        i++;
+    });
+}
+
+app.get('/v2/connect', (req, res, next) => {
     let name = req.query.name;
     let id = req.query.id;
     if (!name || !id)
         return res.status(400).send("Please send Name and Id");
     users[id] = {
         name,
+        id,
         searchBooks: [],
-        pendingBooks: []
+        foundBooks: []
     };
     UserSchema.findOne({ id }, (err, user) => {
         if (err) {
@@ -50,7 +66,7 @@ app.get('/connect', (req, res, next) => {
             delete users[id];
             return res.status(404).send("No user found");
         }
-        res.status(200).send({
+        return res.status(200).send({
             user: user.name,
             regno: user.regno,
             pendingFine: user.pendingFine
@@ -58,7 +74,7 @@ app.get('/connect', (req, res, next) => {
     });
 });
 
-app.get('/disconnect', (req, res, next) => {
+app.get('/v2/disconnect', (req, res, next) => {
     let id = req.query.id;
     if (!id)
         return res.status(400).send("Please send ID");
@@ -68,7 +84,7 @@ app.get('/disconnect', (req, res, next) => {
     return res.status(200).send("Disconnected");
 });
 
-app.get('/getuser', (req, res, next) => {
+app.get('/v2/getuser', (req, res, next) => {
     let id = req.query.id;
     if (!id) {
         return res.status(400).send("Please enter ID");
@@ -86,9 +102,9 @@ app.get('/v2/getsession', (req, res, next) => {
     return res.status(200).send(users);
 });
 
-app.get('/api/putbooks', (req, res, next) => {
-    let bulkBooks = req.query.bulkbooks;
-    let id = req.query.id;
+app.post('/v2/putbooks', (req, res, next) => {
+    let bulkBooks = req.body.bulkbooks;
+    let id = req.body.id;
     if (!bulkBooks || !id)
         return res.status(400).send("Please send bulk books and user id");
 
@@ -104,12 +120,106 @@ app.get('/api/putbooks', (req, res, next) => {
     return res.status(200).send("Updated Books");
 });
 
-app.get('/api/getbooks', (req, res, next) => {
+app.post('/v2/putbooks2', (req, res, next) => {
+    let bulkbooks = req.body.bulkbooks;
+    let id = req.body.id;
+    if (!bulkbooks || !id)
+        return res.status(400).send("Please send bulk books and user id");
+
+    let parsedBulkBooks;
+    try {
+        parsedBulkBooks = JSON.parse(bulkbooks);
+    } catch(err) {
+        return res.status(400).send("Send the correct format");
+    }
+    var books = [];
+    _.forEach(parsedBulkBooks, (b) => {
+        BookSchema.find({ bookName: new RegExp(b, 'i') }, (err, book) => {
+            if (err)
+                return next(err);
+            //if (books.length === 0) {
+                //return res.status(404).send("No book Found");
+            //}
+            books.push(book[0].tag);
+            if (books.length === parsedBulkBooks.length) {
+                // users[id].searchBooks = users[id].searchBooks.concat(parsedBulkBooks);
+                users[id].searchBooks = users[id].searchBooks.concat(books);
+                return res.status(200).send("Added");
+            }
+        });
+    });
+});
+
+app.get('/v2/getbooks', (req, res, next) => {
     let id = req.query.id;
     if (!id)
         return res.status(400).send("Please enter your ID");
     return res.status(200).send(users[id].searchBooks);
 });
+
+app.get('/v2/search/book', (req, res, next) => {
+    let bid = req.query.bid;
+    let id = req.query.id;
+    let rid = req.query.rid;
+
+    if (!bid || !id) {
+        return res.send(400).send("Book ID and userID required");
+    }
+
+    BookSchema.findOne({ tag: bid }, (err, book) => {
+        if (err)
+            return next(err);
+        if (!book) {
+            return res.send(404).send("No book found");
+        } else {
+            if (_.indexOf(users[id].searchBooks, bid) !== -1) {
+                return res.status(200).send("Book Found");
+            } else {
+                let found = checkID(users, bid);
+                if (found) {
+                    //users[id].foundBooks = users[id].foundBooks
+                    //users[id].foundBooks = users[id].foundBooks.concat(books);
+                    //users[id].foundBooks.push({ uid: id, bid, rid}); something wron with this
+                    users[found.user].foundBooks.push({ uid: id, bid, rid });
+                    //users[found.user].foundBooks
+                    _.remove(users[found.user].foundBooks, (b) => {
+                        return b === bid; 
+                    });
+                    // return res.status(200).send("Book Found");
+                    return res.status(200).send("helped him");
+                } else {
+                    return res.status(200).send("Not your book");
+                }
+            }
+        }
+    });
+});
+
+// do found book
+app.get('/v2/realtime', (req, res, next) => {
+    let id = req.query.id;
+
+    if (!id)
+        return res.status(400).send("Please send your ID");
+    if (_.isEqual(users[id].foundBooks, [])) {
+        return res.status(200).send("Still not found");
+    } else {
+        let foundBook = users[id].foundBook.pop();
+        //return res.status(200).send(foundBook);
+        ColumnSchema.findOne({ tag: rid }, (err, row) => {
+            if (err)
+                return next(err);
+            if (!row)
+                return res.status(404).send("Column Not found");
+            else {
+                return res.status(200).send(_.merge(foundBook, {
+                    columnName: row.columnName
+                }));
+            }
+        });
+    }
+});
+
 
 app.get('/te', (req, res, next) => {
     let id = req.query.id;
@@ -117,30 +227,11 @@ app.get('/te', (req, res, next) => {
         return res.send(400).send("Please send your ID");
     }
     if (users[id] == undefined)
-        return res.send(404).send("ID not found");
+        return res.status(404).send("ID not found");
     let pendingBooks = users[id].pendingBooks;
     if (pendingBooks.length > 0)
         return res.status(200).send({ok: "ok"});
-    return res.send(200).send(users[id].pendingBooks);
-});
-
-app.get('/v2/search/book', (req, res, next) => {
-    let bid = req.query.bid;
-    let id = req.query.id;
-
-    if (!bid || !id) {
-        return res.send(400).send("Book ID and userID required");
-    }
-
-    BookSchema.findOne({ tag: id }, (err, book) => {
-        if (err)
-            return next(err);
-        if (!book) {
-            return res.send(404).send("No book found");
-        } else {
-            return "";
-        }
-    });
+    return res.status(200).send(users[id].pendingBooks);
 });
 
 

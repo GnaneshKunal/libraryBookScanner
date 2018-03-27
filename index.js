@@ -4,7 +4,7 @@ const http = require('http'),
     bodyParser = require('body-parser'),
     app = express(),
     server = http.createServer(app),
-    router = require('./router'),
+      router = require('./router'),
     PORT = process.env.PORT || 8080;
 
 require('dotenv').config();

@@ -21,6 +21,8 @@ const BookSchema = new mongoose.Schema({
             unique: true
         }
     }
+}, {
+    usePushEach: true
 });
 
 module.exports = mongoose.model('Book', BookSchema);
