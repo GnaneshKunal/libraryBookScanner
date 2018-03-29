@@ -119,21 +119,22 @@ app.post('/v2/putbooks', (req, res, next) => {
     return res.status(200).send("Updated Books");
 });
 
-app.post('/v2/putbooks2', (req, res, next) => {
+app.post('/v2/putbooks2', async (req, res, next) => {
     let bulkbooks = req.body.bulkbooks;
     let id = req.body.id;
     if (!bulkbooks || !id)
         return res.status(400).send("Please send bulk books and user id");
 
-    let parsedBulkBooks;
+    let parsedBulkBooks = bulkbooks.split(',');
+    /*
     try {
         parsedBulkBooks = JSON.parse(bulkbooks);
     } catch(err) {
         return res.status(400).send("Send the correct format");
     }
+    */
     var books = [];
-    let eb = 0;
-    _.forEach(parsedBulkBooks, (b) => {
+    await _.forEach(parsedBulkBooks, (b) => {
         BookSchema.find({ bookName: new RegExp(b, 'i') }, (err, book) => {
             if (err)
                 return next(err);
@@ -141,16 +142,17 @@ app.post('/v2/putbooks2', (req, res, next) => {
                 //return res.status(404).send("No book Found");
             //}
             if (book.length !== 0) {
-                eb++;
+                //eb++;
                 books.push(book[0].tag);
             }
-            if (books.length === eb || books.length === parsedBulkBooks.length) {
+            //if (books.length === parsedBulkBooks.length) {
                 // users[id].searchBooks = users[id].searchBooks.concat(parsedBulkBooks);
-                users[id].searchBooks = users[id].searchBooks.concat(books);
-                return res.status(200).send("Added");
-            }
+            users[id].searchBooks = _.uniq(users[id].searchBooks.concat(books));
+                //return res.status(200).send("Added");
+            //}
         });
     });
+    return res.status(200).send("ADDED");
 });
 
 app.get('/v2/getbooks', (req, res, next) => {
