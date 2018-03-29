@@ -132,6 +132,7 @@ app.post('/v2/putbooks2', (req, res, next) => {
         return res.status(400).send("Send the correct format");
     }
     var books = [];
+    let eb = 0;
     _.forEach(parsedBulkBooks, (b) => {
         BookSchema.find({ bookName: new RegExp(b, 'i') }, (err, book) => {
             if (err)
@@ -139,8 +140,11 @@ app.post('/v2/putbooks2', (req, res, next) => {
             //if (books.length === 0) {
                 //return res.status(404).send("No book Found");
             //}
-            books.push(book[0].tag);
-            if (books.length === parsedBulkBooks.length) {
+            if (book.length !== 0) {
+                eb++;
+                books.push(book[0].tag);
+            }
+            if (books.length === eb || books.length === parsedBulkBooks.length) {
                 // users[id].searchBooks = users[id].searchBooks.concat(parsedBulkBooks);
                 users[id].searchBooks = users[id].searchBooks.concat(books);
                 return res.status(200).send("Added");
