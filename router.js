@@ -107,6 +107,9 @@ app.post('/v2/putbooks', (req, res, next) => {
     if (!bulkBooks || !id)
         return res.status(400).send("Please send bulk books and user id");
 
+    if (users[id] === undefined)
+        return res.status(400).send("Please authenticate");
+
     let parsedBulkBooks;
 
     try {
@@ -124,6 +127,9 @@ app.post('/v2/putbooks2', async (req, res, next) => {
     let id = req.body.id;
     if (!bulkbooks || !id)
         return res.status(400).send("Please send bulk books and user id");
+
+    if (users[id] === undefined)
+        return res.status(400).send("Please authenticate");
 
     let parsedBulkBooks = bulkbooks.split(',');
     /*
@@ -159,6 +165,10 @@ app.get('/v2/getbooks', (req, res, next) => {
     let id = req.query.id;
     if (!id)
         return res.status(400).send("Please enter your ID");
+
+    if (users[id] === undefined)
+        return res.status(400).send("Please authenticate");
+
     return res.status(200).send(users[id].searchBooks);
 });
 
@@ -170,6 +180,9 @@ app.get('/v2/search/book', (req, res, next) => {
     if (!bid || !id) {
         return res.send(400).send("Book ID and userID required");
     }
+
+    if (users[id] === undefined)
+        return res.status(400).send("Please authenticate");
 
     BookSchema.findOne({ tag: bid }, (err, book) => {
         if (err)
@@ -204,6 +217,9 @@ app.get('/v2/search/book', (req, res, next) => {
 app.get('/v2/realtime', (req, res, next) => {
     let id = req.query.id;
 
+    if (users[id] === undefined)
+        return res.status(400).send("Please authenticate");
+
     if (!id)
         return res.status(400).send("Please send your ID");
     if (_.isEqual(users[id].foundBooks, [])) {
@@ -235,6 +251,10 @@ app.get('/te', (req, res, next) => {
     if (!id) {
         return res.send(400).send("Please send your ID");
     }
+    
+    if (users[id] === undefined)
+        return res.status(400).send("Please authenticate");
+
     if (users[id] == undefined)
         return res.status(404).send("ID not found");
     let pendingBooks = users[id].pendingBooks;
