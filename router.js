@@ -178,7 +178,7 @@ app.get('/v2/search/book', (req, res, next) => {
     let rid = req.query.rid;
 
     if (!bid || !id) {
-        return res.send(400).send("Book ID and userID required");
+        return res.status(400).send("Book ID and userID required");
     }
 
     if (users[id] === undefined)
@@ -188,7 +188,7 @@ app.get('/v2/search/book', (req, res, next) => {
         if (err)
             return next(err);
         if (!book) {
-            return res.send(404).send("No book found");
+            return res.status(404).send("No book found");
         } else {
             if (_.indexOf(users[id].searchBooks, bid) !== -1) {
                 return res.status(200).send("Book Found");
@@ -249,9 +249,9 @@ app.get('/v2/realtime', (req, res, next) => {
 app.get('/te', (req, res, next) => {
     let id = req.query.id;
     if (!id) {
-        return res.send(400).send("Please send your ID");
+        return res.status(400).send("Please send your ID");
     }
-    
+
     if (users[id] === undefined)
         return res.status(400).send("Please authenticate");
 
@@ -319,7 +319,7 @@ app.get('/api/misplaced', (req, res, next) => {
 app.get('/api/search', (req, res, next) => {
     let book = req.query.book;
     if (!book) {
-        return res.send(400).send("Book Name Required"); 
+        return res.status(400).send("Book Name Required"); 
     }
     book = book.toLowerCase();
     BookSchema.find({ bookName: new RegExp(book, 'i') }, (err, books) => {
